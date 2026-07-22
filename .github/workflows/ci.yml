@@ -1,0 +1,26 @@
+name: NetViz CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - name: Build
+        run: mvn -B -DskipTests package
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: netviz-jar
+          path: target/netviz-*.jar
+          if-no-files-found: error

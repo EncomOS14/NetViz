@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>NetViz — Packet Flow Visualizer</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<div id="app">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">NV</div>
+            <div>
+                <h1>NetViz</h1>
+                <p class="tagline">Interactive Network Packet Flow Visualizer</p>
+            </div>
+        </div>
+        <div class="topbar-actions">
+            <button type="button" id="btn-demo" class="btn ghost" title="Load a sample campus topology">Load Demo</button>
+            <button type="button" id="btn-clear" class="btn ghost">Clear</button>
+            <button type="button" id="btn-save" class="btn primary">Save Topology</button>
+            <button type="button" id="btn-load" class="btn">Load…</button>
+        </div>
+    </header>
+
+    <main class="layout">
+        <aside class="sidebar left">
+            <section class="panel">
+                <h2>Devices</h2>
+                <p class="hint">Right-click the canvas or drag a device onto it.</p>
+                <div class="device-palette" id="device-palette">
+                    <button type="button" class="palette-item" data-type="router" draggable="true">
+                        <span class="icon router"></span> Router
+                    </button>
+                    <button type="button" class="palette-item" data-type="switch" draggable="true">
+                        <span class="icon switch"></span> Switch
+                    </button>
+                    <button type="button" class="palette-item" data-type="firewall" draggable="true">
+                        <span class="icon firewall"></span> Firewall
+                    </button>
+                    <button type="button" class="palette-item" data-type="server" draggable="true">
+                        <span class="icon server"></span> Server
+                    </button>
+                    <button type="button" class="palette-item" data-type="pc" draggable="true">
+                        <span class="icon pc"></span> PC
+                    </button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Simulation</h2>
+                <div class="control-row">
+                    <button type="button" id="btn-play" class="btn primary wide">▶ Play</button>
+                    <button type="button" id="btn-pause" class="btn wide" disabled>■ Pause</button>
+                </div>
+                <label class="field">
+                    <span>Sim speed</span>
+                    <input type="range" id="sim-speed" min="0.25" max="4" step="0.25" value="1"/>
+                    <span class="value" id="sim-speed-label">1.0×</span>
+                </label>
+                <label class="field">
+                    <span>Global traffic scale</span>
+                    <input type="range" id="traffic-scale" min="0.1" max="3" step="0.1" value="1"/>
+                    <span class="value" id="traffic-scale-label">1.0×</span>
+                </label>
+                <button type="button" id="btn-spike" class="btn accent wide">⚡ Traffic Spike (5s)</button>
+            </section>
+
+            <section class="panel">
+                <h2>Link Legend</h2>
+                <ul class="legend">
+                    <li><span class="swatch green"></span> &lt; 60% utilized</li>
+                    <li><span class="swatch yellow"></span> 60–85% utilized</li>
+                    <li><span class="swatch red"></span> &gt; 85% overloaded</li>
+                </ul>
+                <p class="hint">Double-click a device or link to edit properties. Drag from a device handle to draw a link.</p>
+            </section>
+        </aside>
+
+        <section class="canvas-wrap">
+            <div class="canvas-toolbar">
+                <span id="status-text">Right-click canvas to add devices · Drag handles to connect</span>
+                <span id="fps-text" class="mono"></span>
+            </div>
+            <canvas id="net-canvas" width="1200" height="720"></canvas>
+            <div id="context-menu" class="context-menu hidden" role="menu">
+                <button type="button" data-action="add-router">Add Router</button>
+                <button type="button" data-action="add-switch">Add Switch</button>
+                <button type="button" data-action="add-firewall">Add Firewall</button>
+                <button type="button" data-action="add-server">Add Server</button>
+                <button type="button" data-action="add-pc">Add PC</button>
+                <hr/>
+                <button type="button" data-action="delete" class="danger hidden" id="ctx-delete">Delete Selected</button>
+            </div>
+        </section>
+
+        <aside class="sidebar right">
+            <section class="panel">
+                <h2>Live Stats</h2>
+                <div class="stats" id="live-stats">
+                    <div class="stat"><span class="label">Devices</span><span class="mono" id="stat-devices">0</span></div>
+                    <div class="stat"><span class="label">Links</span><span class="mono" id="stat-links">0</span></div>
+                    <div class="stat"><span class="label">Packets in flight</span><span class="mono" id="stat-packets">0</span></div>
+                    <div class="stat"><span class="label">Avg utilization</span><span class="mono" id="stat-util">0%</span></div>
+                    <div class="stat"><span class="label">Hottest link</span><span class="mono" id="stat-hot">—</span></div>
+                    <div class="stat"><span class="label">Total Mbps</span><span class="mono" id="stat-mbps">0</span></div>
+                </div>
+            </section>
+
+            <section class="panel grow">
+                <div class="panel-head">
+                    <h2>Packet Log</h2>
+                    <button type="button" id="btn-clear-log" class="btn tiny ghost">Clear</button>
+                </div>
+                <div id="packet-log" class="packet-log mono" aria-live="polite"></div>
+            </section>
+
+            <section class="panel">
+                <h2>Selection</h2>
+                <div id="selection-info" class="selection-info">
+                    <p class="hint">Nothing selected.</p>
+                </div>
+            </section>
+        </aside>
+    </main>
+</div>
+
+<!-- Properties modal -->
+<div id="modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <h3 id="modal-title">Edit Properties</h3>
+        <form id="props-form">
+            <div id="props-fields"></div>
+            <div class="modal-actions">
+                <button type="button" id="modal-cancel" class="btn ghost">Cancel</button>
+                <button type="submit" class="btn primary">Apply</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Load topology modal -->
+<div id="load-backdrop" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+        <h3>Load Saved Topology</h3>
+        <div id="topology-list" class="topology-list"></div>
+        <div class="modal-actions">
+            <button type="button" id="load-cancel" class="btn ghost">Close</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/simulator.js}" src="/js/simulator.js"></script>
+<script th:src="@{/js/netviz.js}" src="/js/netviz.js"></script>
+</body>
+</html>

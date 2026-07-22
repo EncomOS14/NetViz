@@ -1,0 +1,15 @@
+[Unit]
+Description=NetViz Packet Flow Visualizer
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/netviz
+ExecStart=/usr/bin/java -jar /opt/netviz/netviz.jar --server.port=8081
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/opt/netviz/logs/app.log
+StandardError=append:/opt/netviz/logs/app.log
+
+[Install]
+WantedBy=multi-user.target

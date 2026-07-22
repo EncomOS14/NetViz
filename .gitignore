@@ -1,0 +1,12 @@
+target/
+data/
+*.log
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+*.class
+.vscode/
+netviz.jar
