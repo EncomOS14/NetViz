@@ -4,6 +4,8 @@ Interactive network packet flow visualizer for ITC 583 (Cloud Computing).
 
 I built a Spring Boot web app where you can design a simple network on a canvas, set link speeds and traffic, and watch packets move with color-coded utilization (green / yellow / red).
 
+![NetViz dashboard](docs/netviz-dashboard.png)
+
 ## Stack
 
 - Java 17 + Spring Boot 3.3
